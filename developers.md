@@ -18,7 +18,7 @@ Then file a pull request!
 `get_versions()` returns a dictionary of version information: strings and other data that may be useful pieces from which you can construct a version string. It can be used to populate a template string:
 
 ```python
-version = "%(tag)s%(dash_distance)s%(dash_dirty)"% versioneer.get_versions()
+version = "%(tag)s%(dash_distance)s%(dash_dirty)s"% versioneer.get_versions()
 ```
 
 You can also extract the pieces and programmatically construct a string or make other decisions:
