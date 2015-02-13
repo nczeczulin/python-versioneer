@@ -20,21 +20,23 @@ class ParseGitDescribe(unittest.TestCase):
     def test_parse(self):
         def pv(git_describe):
             return git_parse_vcs_describe(git_describe, "v")
-        self.assertEqual(pv("1f"), ("0+untagged.g1f", False))
-        self.assertEqual(pv("1f-dirty"), ("0+untagged.g1f.dirty", True))
-        self.assertEqual(pv("v1.0-0-g1f"), ("1.0", False))
-        self.assertEqual(pv("v1.0-0-g1f-dirty"), ("1.0+0.g1f.dirty", True))
-        self.assertEqual(pv("v1.0-1-g1f"), ("1.0+1.g1f", False))
-        self.assertEqual(pv("v1.0-1-g1f-dirty"), ("1.0+1.g1f.dirty", True))
+        def d(pep440, dirty):
+            return {"pep440": pep440, "is-dirty": dirty}
+        self.assertEqual(pv("1f"), d("0+untagged.g1f", False))
+        self.assertEqual(pv("1f-dirty"), d("0+untagged.g1f.dirty", True))
+        self.assertEqual(pv("v1.0-0-g1f"), d("1.0", False))
+        self.assertEqual(pv("v1.0-0-g1f-dirty"), d("1.0+0.g1f.dirty", True))
+        self.assertEqual(pv("v1.0-1-g1f"), d("1.0+1.g1f", False))
+        self.assertEqual(pv("v1.0-1-g1f-dirty"), d("1.0+1.g1f.dirty", True))
 
         def p(git_describe):
             return git_parse_vcs_describe(git_describe, "")
-        self.assertEqual(p("1f"), ("0+untagged.g1f", False))
-        self.assertEqual(p("1f-dirty"), ("0+untagged.g1f.dirty", True))
-        self.assertEqual(p("1.0-0-g1f"), ("1.0", False))
-        self.assertEqual(p("1.0-0-g1f-dirty"), ("1.0+0.g1f.dirty", True))
-        self.assertEqual(p("1.0-1-g1f"), ("1.0+1.g1f", False))
-        self.assertEqual(p("1.0-1-g1f-dirty"), ("1.0+1.g1f.dirty", True))
+        self.assertEqual(p("1f"), d("0+untagged.g1f", False))
+        self.assertEqual(p("1f-dirty"), d("0+untagged.g1f.dirty", True))
+        self.assertEqual(p("1.0-0-g1f"), d("1.0", False))
+        self.assertEqual(p("1.0-0-g1f-dirty"), d("1.0+0.g1f.dirty", True))
+        self.assertEqual(p("1.0-1-g1f"), d("1.0+1.g1f", False))
+        self.assertEqual(p("1.0-1-g1f-dirty"), d("1.0+1.g1f.dirty", True))
 
 
 class Keywords(unittest.TestCase):

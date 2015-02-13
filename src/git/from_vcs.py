@@ -12,13 +12,15 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     # now we have TAG-NUM-gHEX or HEX
 
     if "-" not in git_describe:  # just HEX
-        return "0+untagged.g"+git_describe+dirty_suffix, dirty
+        return {"pep440": "0+untagged.g"+git_describe+dirty_suffix,
+                "is-dirty": dirty}
 
     # just TAG-NUM-gHEX
     mo = re.search(r'^(.+)-(\d+)-g([0-9a-f]+)$', git_describe)
     if not mo:
         # unparseable. Maybe git-describe is misbehaving?
-        return "0+unparseable"+dirty_suffix, dirty
+        return {"pep440": "0+unparseable"+dirty_suffix,
+                "is-dirty": dirty}
 
     # tag
     full_tag = mo.group(1)
@@ -26,7 +28,8 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
         if verbose:
             fmt = "tag '%s' doesn't start with prefix '%s'"
             print(fmt % (full_tag, tag_prefix))
-        return None, dirty
+        return {"pep440": None,
+                "is-dirty": dirty}
     tag = full_tag[len(tag_prefix):]
 
     # distance: number of commits since tag
@@ -43,7 +46,9 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     if distance or dirty:
         version += "+%d.g%s" % (distance, commit) + dirty_suffix
 
-    return version, dirty
+    return {"pep440": version,
+            "is-dirty": dirty,
+            }
 
 
 def git_versions_from_vcs(tag_prefix, root, verbose=False):
@@ -68,15 +73,15 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
     # --long was added in git-1.5.5
     if stdout is None:
         return {}  # try next method
-    version, dirty = git_parse_vcs_describe(stdout, tag_prefix, verbose)
+    pieces = git_parse_vcs_describe(stdout, tag_prefix, verbose)
 
     # build "full", which is FULLHEX[.dirty]
     stdout = run_command(GITS, ["rev-parse", "HEAD"], cwd=root)
     if stdout is None:
         return {}
     full = stdout.strip()
-    if dirty:
+    if pieces["is-dirty"]:
         full += ".dirty"
 
-    return {"version": version, "full": full}
+    return {"version": pieces["pep440"], "full": full}
 
