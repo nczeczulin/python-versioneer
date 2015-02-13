@@ -90,3 +90,39 @@ The default value of `version_string_template` is `%(default)s`, equivalent to `
 ```python
 versioneer.version_string_template = "%(git-describe)s"
 ```
+
+## Which template keys are available in which environments?
+
+Versioneer can get version information in one of four ways, depending upon what sort of source tree it finds itself in. The first method which yields results will be used.
+
+* **file**: a `build/` directory created by `python setup.py build`, or an unpacked tarball created with `python setup.py sdist`. The build/sdist process replaces `_version.py` with a short file that contains static version strings.
+* **keywords**: an unpacked tarball created with `git archive`. Versioneer uses git-attributes to expand keywords in the checked-in `_version.py` file. This only works well for tagged revisions.
+* **git-describe**: a git checkout (with a `.git` directory), where `git describe` works. This gives the most information.
+* **parentdir**: a last-ditch method which looks at the parent directory's name for a version string. Most tarball-creation methods try to prefix the tarball file paths with whatever version was available in the source tree.
+
+| key                     | file  | keywords | git-describe | parentdir |
+| ---                     | ----- | -------- | ------------ | --------- |
+| (full,short)-revisionid | yes   | yes      | yes          | ?         |
+| exact-tag               | yes   | yes      | yes          | yes       |
+| closest-tag             | yes   | no[1]    | yes          | no?       |
+| closest-tag-or-zero     | yes   | no[1]    | yes          | no?       |
+| (dash-)distance         | yes   | no[1]    | yes          | no?       |
+| post-dev-distance       | yes   | no       | yes          | no?       |
+| post-distance-dirty     | yes   | no       | yes          | no        |
+| (is,dash,dot)-dirty[2]  | yes   | no       | yes          | no        |
+
+Notes:
+
+* 1: `closest-tag`: git-archive tarballs created from non-tagged revisions will contain a full revision hash, but no information about recent tags (`closest-tag` or `distance`). These tarballs use keyword expansion, and there is no git-attributes keyword that replicates the tag-searching features of git-describe.
+* 2: `dirty`: modification to the source tree can only be detected from a git checkout. A build or sdist created from a dirty tree will be marked as dirty, however an sdist created from a clean tree which is subsequently modified will not be reported as dirty.
+
+## What version strings will we get in each environment?
+
+| key          | file               | keywords          | git-describe             | parentdir |
+| ---          | ------------------ | ----------------- | ------------------------ | --------- |
+| pep440       | TAG[+DIST.gHASH]   | TAG or 0.unknown? | TAG[+DIST.gHASH[.dirty]] | TAG or ?  |
+| pep440-pre   | TAG[.post.devDIST] | TAG or ?          | TAG[.post.devDIST]       | TAG or ?  |
+| pep440-old   | TAG[.postDIST]     | TAG or ?          | TAG[.postDIST[.dev0]]    | TAG or ?  |
+| git-describe | TAG[-DIST-gHASH]   | TAG or ?          | TAG[-DIST-gHASH][-dirty] | TAG or ?  |
+| long         | TAG-DIST-gHASH     | TAG-gHASH or ?    | TAG-DIST-gHASH[-dirty]   | ?         |
+
