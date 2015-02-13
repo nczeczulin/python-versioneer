@@ -104,7 +104,9 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
     else:
         pep440 = p["closest-tag-or-zero"]
         if p["distance"] or p["is-dirty"]:
-            pep440 += "+%(distance)d.g%(short-revisionid)s%(dot-dirty)s" % p
+            pep440 += ("+%(distance)d"
+                       ".g%(short-revisionid)s"
+                       "%(dot-dirty)s") % p
     p["pep440"] = pep440
     full = "%(full-revisionid)s%(dot-dirty)s" % p
     p["full"] = full
