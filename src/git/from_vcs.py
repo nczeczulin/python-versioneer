@@ -7,7 +7,6 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     dirty = git_describe.endswith("-dirty")
     if dirty:
         git_describe = git_describe[:git_describe.rindex("-dirty")]
-    dirty_suffix = ".dirty" if dirty else ""
 
     # now we have TAG-NUM-gHEX or HEX
 
@@ -106,7 +105,10 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
         pep440 = p["closest-tag-or-zero"]
         if p["distance"] or p["is-dirty"]:
             pep440 += "+%(distance)d.g%(short-revisionid)s%(dot-dirty)s" % p
+    p["pep440"] = pep440
     full = "%(full-revisionid)s%(dot-dirty)s" % p
+    p["full"] = full
 
-    return {"version": pep440, "full": full}
+    p["version"] = p["pep440"]
+    return p
 
