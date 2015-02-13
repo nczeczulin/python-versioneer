@@ -20,23 +20,64 @@ class ParseGitDescribe(unittest.TestCase):
     def test_parse(self):
         def pv(git_describe):
             return git_parse_vcs_describe(git_describe, "v")
-        def d(pep440, dirty):
-            return {"pep440": pep440, "is-dirty": dirty}
-        self.assertEqual(pv("1f"), d("0+untagged.g1f", False))
-        self.assertEqual(pv("1f-dirty"), d("0+untagged.g1f.dirty", True))
-        self.assertEqual(pv("v1.0-0-g1f"), d("1.0", False))
-        self.assertEqual(pv("v1.0-0-g1f-dirty"), d("1.0+0.g1f.dirty", True))
-        self.assertEqual(pv("v1.0-1-g1f"), d("1.0+1.g1f", False))
-        self.assertEqual(pv("v1.0-1-g1f-dirty"), d("1.0+1.g1f.dirty", True))
+        self.assertEqual(pv("1f"), {"closest-tag": None,
+                                    "short-revisionid": "1f",
+                                    "is-dirty": False}) # 0+untagged.g1f
+        self.assertEqual(pv("1f-dirty"),
+                         {"closest-tag": None,
+                          "short-revisionid": "1f",
+                          "is-dirty": True}) # 0+untagged.g1f.dirty
+        self.assertEqual(pv("v1.0-0-g1f"),
+                         {"closest-tag": "1.0",
+                          "short-revisionid": "1f",
+                          "distance": 0,
+                          "is-dirty": False}) # 1.0
+        self.assertEqual(pv("v1.0-0-g1f-dirty"),
+                         {"closest-tag": "1.0",
+                          "distance": 0,
+                          "short-revisionid": "1f",
+                          "is-dirty": True}) # 1.0+0.g1f.dirty
+        self.assertEqual(pv("v1.0-1-g1f"),
+                         {"closest-tag": "1.0",
+                          "distance": 1,
+                          "short-revisionid": "1f",
+                          "is-dirty": False}) # 1.0+1.g1f
+        self.assertEqual(pv("v1.0-1-g1f-dirty"),
+                         {"closest-tag": "1.0",
+                          "distance": 1,
+                          "short-revisionid": "1f",
+                          "is-dirty": True }) # 1.0+1.g1f.dirty
 
         def p(git_describe):
             return git_parse_vcs_describe(git_describe, "")
-        self.assertEqual(p("1f"), d("0+untagged.g1f", False))
-        self.assertEqual(p("1f-dirty"), d("0+untagged.g1f.dirty", True))
-        self.assertEqual(p("1.0-0-g1f"), d("1.0", False))
-        self.assertEqual(p("1.0-0-g1f-dirty"), d("1.0+0.g1f.dirty", True))
-        self.assertEqual(p("1.0-1-g1f"), d("1.0+1.g1f", False))
-        self.assertEqual(p("1.0-1-g1f-dirty"), d("1.0+1.g1f.dirty", True))
+        self.assertEqual(p("1f"),
+                         {"closest-tag": None,
+                          "short-revisionid": "1f",
+                          "is-dirty": False}) # 0+untagged.g1f
+        self.assertEqual(p("1f-dirty"),
+                         {"closest-tag": None,
+                          "short-revisionid": "1f",
+                          "is-dirty": True}) # 0+untagged.g1f.dirty
+        self.assertEqual(p("1.0-0-g1f"),
+                         {"closest-tag": "1.0",
+                          "distance": 0,
+                          "short-revisionid": "1f",
+                          "is-dirty": False}) # 1.0
+        self.assertEqual(p("1.0-0-g1f-dirty"),
+                         {"closest-tag": "1.0",
+                          "distance": 0,
+                          "short-revisionid": "1f",
+                          "is-dirty": True}) # 1.0+0.g1f.dirty
+        self.assertEqual(p("1.0-1-g1f"),
+                         {"closest-tag": "1.0",
+                          "distance": 1,
+                          "short-revisionid": "1f",
+                          "is-dirty": False}) # 1.0+1.g1f
+        self.assertEqual(p("1.0-1-g1f-dirty"),
+                         {"closest-tag": "1.0",
+                          "distance": 1,
+                          "short-revisionid": "1f",
+                          "is-dirty": True}) # 1.0+1.g1f.dirty
 
 
 class Keywords(unittest.TestCase):
