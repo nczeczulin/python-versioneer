@@ -18,7 +18,7 @@ Then file a pull request!
 `get_versions()` returns a dictionary of version information: strings and other data that may be useful pieces from which you can construct a version string. It can be used to populate a template string:
 
 ```python
-version = "%(tag)s%(dash_distance)s%(dash_dirty)s"% versioneer.get_versions()
+version = "%(tag)s%(dash-distance)s%(dash-dirty)s"% versioneer.get_versions()
 ```
 
 You can also extract the pieces and programmatically construct a string or make other decisions:
@@ -38,25 +38,33 @@ setup(...
 
 The version information is intended to be mostly VCS-neutral, but some VCSes cannot support everything. The basic keys available are:
 
-* `full_revisionid`: a full-length id (hex SHA1 for git) for the current revision
-* `short_revisionid`: a truncated form of `full_revisionid`, typically 7 characters for git (but might be more in large repositories if necessary to uniquely identify the commit)
-* `dirty`: a boolean, indicating that the working directory has modified files
-* `closest_tag`: a string (or None if nothing has been tagged), with the name of the closest ancestor tag. The "tag prefix" is stripped off.
+* `full-revisionid`: a full-length id (hex SHA1 for git) for the current revision
+* `short-revisionid`: a truncated form of `full-revisionid`, typically 7 characters for git (but might be more in large repositories if necessary to uniquely identify the commit)
+* `closest-tag`: a string (or None if nothing has been tagged), with the name of the closest ancestor tag. The "tag prefix" is stripped off.
+* `closest-tag-or-zero`: like `closest-tag`, but "0" if nothing has been tagged
 * `distance`: an integer, the number of commits since the most recent tag. If the current revision is tagged, this will be 0. If nothing has been tagged, this will be the total number of commits.
-* `dash_dirty`: an empty string if `dirty` is False, else the string `"-dirty"`
-* `closest_tag_or_zero`: like `closest_tag`, but "0" if nothing has been tagged
-* `dash_distance`: an empty string if `distance==0`, else `"-%d" % distance`
+* `dash-distance`: `"-%d" % distance` if `distance != 0`, else an empty string
+* `post-dev-distance`: `".post.dev%d" % distance` if `distance != 0`, else an empty string. Used by `pep440-pre`.
+* `post-distance-dirty`: `".post%d" % distance` if `distance != 0`, `".post%d.dev0" % distance` if the tree is dirty too, else an empty string if `distance == 0`. Used by `pep440-old`.
+* `is-dirty`: a boolean, indicating that the working directory has modified files
+* `dash-dirty`: the string `"-dirty"` if `dirty` is False, else an empty string
+* `dot-dirty`: the string `".dirty"` if `dirty` is False, else an empty string
+
+
+If a value is not available (e.g. the source tree does not contain enough information to provide it), the dictionary will not contain that key.
 
 In addition, there are several composite pre-formatted strings available:
 
-* `describe`: `TAG[-DISTANCE-gSHORTHASH][-dirty]`, equivalent to `git describe --tags --dirty --always`. The distance and shorthash are only included if the commit is not tagged. If nothing was tagged, this will be the short revisionid, plus "-dirty" if dirty.
+* `default`: same as `pep440`
+* `pep440`: `TAG[+DISTANCE.gSHORTHASH[.dirty]]`, a PEP-440 compatible version string which uses the "local version identifier" to record the complete non-tag information. This format provides compliant versions even under unusual/error circumstances. It returns `0+untagged.gHASH[.dirty]` before any tags have been set, `0+unknown` if the tree does not contain enough information to report a verion (e.g. the .git directory has been removed), and `0.unparseable[.dirty]` if `git describe` emits something weird.
+* `pep440-pre`: `TAG[.post.devDISTANCE]`, a PEP-440 compatible version string which loses information but has the useful property that non-tagged versions qualify for `pip install --pre` (by virtue of the `.dev` component). This form does not record the commit hash, nor the `-dirty` flag.
+* `pep440-old`: `TAG[.postDISTANCE[.dev0]]`, a PEP-440 compatible version string which loses information but enables downstream projects to depend upon post-release versions (by counting commits). The ".dev0" suffix indicates a dirty tree. This form does not record the commit hash. If nothing has been tagged, this will be `0.postDISTANCE[.dev0]`. Note that PEP-0440 rules indicate that `X.dev0` sorts as "older" than `X`, so our -dirty flag is expressed somewhat backwards (usually "dirty" indicates newer changes than the base commit), but PEP-0440 offers no positive post-".postN" component. You should never be releasing software with -dirty anyways.
+* `git-describe`: `TAG[-DISTANCE-gSHORTHASH][-dirty]`, equivalent to `git describe --tags --dirty --always`. The distance and shorthash are only included if the commit is not tagged. If nothing was tagged, this will be the short revisionid, plus "-dirty" if dirty.
 * `long`: `TAG-DISTANCE-gSHORTHASH[-dirty]`, equivalent to `git describe --tags --dirty --always --long`. The distance and shorthash are included unconditionally. As with `describe`, if nothing was tagged, this will be the short revisionid, possibly with "-dirty".
-* `default`: Like `describe`, but uses a fake tag of "0" if nothing was actually tagged.
-* `pep440`: `TAG[.postDISTANCE[.dev0]]`, a PEP-0440 compatible version string which loses information but is suitable for uploading to PyPI and installing with pip. The ".dev0" suffix indicates a dirty tree. If nothing has been tagged, this will be `0.postDISTANCE[.dev0]`. Note that PEP-0440 rules indicate that `X.dev0` sorts as "older" than `X`, so our -dirty flag is expressed somewhat backwards (usually "dirty" indicates newer changes than the base commit), but PEP-0440 offers no positive post-".postN" component. You should never be releasing software with -dirty anyways.
 
 When the version is deduced from a parent directory, the composite strings are provided, but they are all equal to the trimmed parent directory name.
 
-When the version is deduced from expanded keywords, `full_revisionid` and `short_revisionid` are available as usual. `closest_tag` is the shortest tag which matches the revision, otherwise it is None. `distance` is not present, as the git keyword expansion does not offer a way to search for a recent tag. `dirty` is always False. The composite strings are all equal to the tag if present, otherwise they are set equal to the full revision id.
+When the version is deduced from expanded keywords, `full-revisionid` and `short-revisionid` are available as usual. `closest-tag` is the shortest tag which matches the revision, otherwise it is None. `distance` is not present, as the git keyword expansion does not offer a way to search for a recent tag. `dirty` is always False. The composite strings are all equal to the tag if present, otherwise they are set equal to the full revision id.
 
 ## What does get_version() return?
 
@@ -67,8 +75,8 @@ def get_version():
     return version_string_template % get_versions()
 ```
 
-The default value of `version_string_template` is `%(describe)s`, which yields the "git describe" style of version string. To get pep440-compatible strings from `get_version()`, use this:
+The default value of `version_string_template` is `%(default)s`, equivalent to `%(pep440)s`, yielding the "pep440" style of version string. To get e.g. git-describe -style strings from `get_version()`, use this:
 
 ```python
-versioneer.version_string_template = "%(pep440)s"
+versioneer.version_string_template = "%(git-describe)s"
 ```
