@@ -50,17 +50,23 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
             print("discarding '%s', no digits" % ",".join(refs-tags))
     if verbose:
         print("likely tags: %s" % ",".join(sorted(tags)))
+    exact_tag = None
     for ref in sorted(tags):
         # sorting will prefer e.g. "2.0" over "2.0rc1"
         if ref.startswith(tag_prefix):
-            r = ref[len(tag_prefix):]
+            exact_tag = ref[len(tag_prefix):]
             if verbose:
-                print("picking %s" % r)
-            return {"version": r,
-                    "full": keywords["full"].strip()}
-    # no suitable tags, so version is "0+unknown", but full hex is still there
-    if verbose:
-        print("no suitable tags, using unknown + full revision id")
-    return {"version": "0+unknown",
-            "full": keywords["full"].strip()}
+                print("picking %s" % exact_tag)
+            break
+    p = {"exact-tag": exact_tag,
+         "full": keywords["full"].strip()}
+    if exact_tag:
+        p["version"] = exact_tag
+    else:
+        # no suitable tags, so version is "0+unknown", but full hex is still
+        # there
+        if verbose:
+            print("no suitable tags, using unknown + full revision id")
+        p["version"] = "0+unknown"  # TODO: 0+untagged
+    return p
 

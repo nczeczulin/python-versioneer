@@ -95,18 +95,24 @@ class Keywords(unittest.TestCase):
 
     def test_parse(self):
         v = self.parse(" (HEAD, 2.0,master  , otherbranch ) ", " full ")
-        self.assertEqual(v["version"], "2.0")
-        self.assertEqual(v["full"], "full")
+        self.assertEqual(v, {"exact-tag": "2.0",
+                             "version": "2.0",
+                             "full": "full",
+                             })
 
     def test_prefer_short(self):
         v = self.parse(" (HEAD, 2.0rc1, 2.0, 2.0rc2) ", " full ")
-        self.assertEqual(v["version"], "2.0")
-        self.assertEqual(v["full"], "full")
+        self.assertEqual(v, {"exact-tag": "2.0",
+                             "version": "2.0",
+                             "full": "full",
+                             })
 
     def test_prefix(self):
         v = self.parse(" (HEAD, projectname-2.0) ", " full ", "projectname-")
-        self.assertEqual(v["version"], "2.0")
-        self.assertEqual(v["full"], "full")
+        self.assertEqual(v, {"exact-tag": "2.0",
+                             "version": "2.0",
+                             "full": "full",
+                             })
 
     def test_unexpanded(self):
         v = self.parse(" $Format$ ", " full ", "projectname-")
@@ -114,13 +120,17 @@ class Keywords(unittest.TestCase):
 
     def test_no_tags(self):
         v = self.parse("(HEAD, master)", "full")
-        self.assertEqual(v["version"], "0+unknown")
-        self.assertEqual(v["full"], "full")
+        self.assertEqual(v, {"exact-tag": None,
+                             "version": "0+unknown",
+                             "full": "full",
+                             })
 
     def test_no_prefix(self):
         v = self.parse("(HEAD, master, 1.23)", "full", "missingprefix-")
-        self.assertEqual(v["version"], "0+unknown")
-        self.assertEqual(v["full"], "full")
+        self.assertEqual(v, {"exact-tag": None,
+                             "version": "0+unknown",
+                             "full": "full",
+                             })
 
 VERBOSE = False
 
