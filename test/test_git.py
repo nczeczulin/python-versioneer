@@ -28,22 +28,26 @@ class ParseGitDescribe(unittest.TestCase):
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 0+untagged.g1f.dirty
         self.assertEqual(pv("v1.0-0-g1f"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": "1.0",
+                          "closest-tag": "1.0",
                           "short-revisionid": "1f",
                           "distance": 0,
                           "is-dirty": False}) # 1.0
         self.assertEqual(pv("v1.0-0-g1f-dirty"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": "1.0",
+                          "closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+0.g1f.dirty
         self.assertEqual(pv("v1.0-1-g1f"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": None,
+                          "closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0+1.g1f
         self.assertEqual(pv("v1.0-1-g1f-dirty"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": None,
+                          "closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": True }) # 1.0+1.g1f.dirty
@@ -59,22 +63,26 @@ class ParseGitDescribe(unittest.TestCase):
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 0+untagged.g1f.dirty
         self.assertEqual(p("1.0-0-g1f"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": "1.0",
+                          "closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0
         self.assertEqual(p("1.0-0-g1f-dirty"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": "1.0",
+                          "closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+0.g1f.dirty
         self.assertEqual(p("1.0-1-g1f"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": None,
+                          "closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0+1.g1f
         self.assertEqual(p("1.0-1-g1f-dirty"),
-                         {"closest-tag": "1.0",
+                         {"exact-tag": None,
+                          "closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+1.g1f.dirty

@@ -52,6 +52,7 @@ The version information is intended to be mostly VCS-neutral, but some VCSes can
 | ---                   | ----------- |
 | `full-revisionid`     | a full-length id (hex SHA1 for git) for the current revision |
 | `short-revisionid`    | a truncated form of `full-revisionid`, typically 7 characters for git (but might be more in large repositories if necessary to uniquely identify the commit) |
+| `exact-tag`           | a string with the tag that matches the current commit, or None if we are not on a tagged commit. The "tag prefix" is stripped off. |
 | `closest-tag`         | a string (or None if nothing has been tagged), with the name of the closest ancestor tag. The "tag prefix" is stripped off. |
 | `closest-tag-or-zero` | like `closest-tag`, but "0" if nothing has been tagged |
 | `distance`            | an integer, the number of commits since the most recent tag. If the current revision is tagged, this will be 0. If nothing has been tagged, this will be the total number of commits. |

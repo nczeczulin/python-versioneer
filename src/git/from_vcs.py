@@ -38,6 +38,7 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     commit = mo.group(3)
 
     return {"is-dirty": dirty,
+            "exact-tag": tag if distance == 0 else None,
             "closest-tag": tag,
             "distance": distance,
             "short-revisionid": commit,
