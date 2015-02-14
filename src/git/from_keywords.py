@@ -63,10 +63,10 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
     if exact_tag:
         p["version"] = exact_tag
     else:
-        # no suitable tags, so version is "0+unknown", but full hex is still
+        # no suitable tags, so version is "0+untagged", but full hex is still
         # there
         if verbose:
             print("no suitable tags, using unknown + full revision id")
-        p["version"] = "0+unknown"  # TODO: 0+untagged
+        p["version"] = "0+untagged"
     return p
 

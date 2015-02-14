@@ -121,14 +121,14 @@ class Keywords(unittest.TestCase):
     def test_no_tags(self):
         v = self.parse("(HEAD, master)", "full")
         self.assertEqual(v, {"exact-tag": None,
-                             "version": "0+unknown",
+                             "version": "0+untagged",
                              "full": "full",
                              })
 
     def test_no_prefix(self):
         v = self.parse("(HEAD, master, 1.23)", "full", "missingprefix-")
         self.assertEqual(v, {"exact-tag": None,
-                             "version": "0+unknown",
+                             "version": "0+untagged",
                              "full": "full",
                              })
 
@@ -358,8 +358,8 @@ class Repo(unittest.TestCase):
             # expanded keywords only tell us about tags and full revisionids,
             # not how many patches we are beyond a tag. So we can't expect
             # the short version to be like 1.0-1-gHEXID. The code falls back
-            # to short="unknown"
-            expected_TD["short"] = "0+unknown"
+            # to short="untagged"
+            expected_TD["short"] = "0+untagged"
         self.check_version(target, expected_TD, False, state, tree="TD")
 
         # TE: unpacked setup.py sdist tarball
