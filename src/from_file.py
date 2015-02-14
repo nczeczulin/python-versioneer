@@ -5,36 +5,41 @@ SHORT_VERSION_PY = """
 # unpacked source archive. Distribution tarballs contain a pre-generated copy
 # of this file.
 
-version_version = '%(version)s'
-version_full = '%(full)s'
-def get_versions(default={}, verbose=False):
-    return {'version': version_version, 'full': version_full}
+import json
 
+version_json = '''
+%s
+'''  # END VERSION_JSON
+
+
+def get_versions(default={}, verbose=False):
+    return json.loads(version_json)
 """
 
 DEFAULT = {"version": "0+unknown", "full": "unknown"}
 
+import json # --STRIP DURING BUILD
+import re # --STRIP DURING BUILD
 
 def versions_from_file(filename):
-    versions = {}
     try:
         with open(filename) as f:
-            for line in f.readlines():
-                mo = re.match("version_version = '([^']+)'", line)
-                if mo:
-                    versions["version"] = mo.group(1)
-                mo = re.match("version_full = '([^']+)'", line)
-                if mo:
-                    versions["full"] = mo.group(1)
+            contents = f.read()
     except EnvironmentError:
         return {}
-
+    mo = re.search(r"version_json = '''\n(.*)'''  # END VERSION_JSON",
+                   contents, re.M | re.S)
+    if not mo:
+        return {}
+    versions = json.loads(mo.group(1))
     return versions
 
 
 def write_to_version_file(filename, versions):
+    contents = json.dumps(versions, sort_keys=True,
+                          indent=1, separators=(",", ": "))
     with open(filename, "w") as f:
-        f.write(SHORT_VERSION_PY % versions)
+        f.write(SHORT_VERSION_PY % contents)
 
     print("set %s to '%s'" % (filename, versions["version"]))
 
