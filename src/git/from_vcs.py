@@ -38,7 +38,6 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     commit = mo.group(3)
 
     return {"is-dirty": dirty,
-            "exact-tag": tag if distance == 0 else None,
             "closest-tag": tag,
             "distance": distance,
             "short-revisionid": commit,
@@ -70,48 +69,13 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
     try:
         p = git_parse_vcs_describe(stdout, tag_prefix, verbose).copy()
     except ValueError:
-        return {"pep440": "0+unparseable"}
-
-    if p["closest-tag"] is None:
-        p["closest-tag-or-zero"] = "0"
-    else:
-        p["closest-tag-or-zero"] = p["closest-tag"]
-    if "distance" in p:
-        if p["distance"]:
-            # non-zero
-            p["dash-distance"] = "-%d" % p["distance"]
-        else:
-            p["dash-distance"] = ""
-    if p["is-dirty"]:
-        p["dash-dirty"] = "-dirty"
-        p["dot-dirty"] = ".dirty"
-    else:
-        p["dash-dirty"] = ""
-        p["dot-dirty"] = ""
+        return {"unparseable": True}
 
     # build "full", which is FULLHEX[.dirty]
     stdout = run_command(GITS, ["rev-parse", "HEAD"], cwd=root)
     if stdout is None:
         return {}
-    p["full-revisionid"] = stdout.strip()
+    p["long-revisionid"] = stdout.strip()
 
-    # now build up version string, with post-release "local version
-    # identifier". Our goal: TAG[+NUM.gHEX[.dirty]] . Note that if you get a
-    # tagged build and then dirty it, you'll get TAG+0.gHEX.dirty . So you
-    # can always test version.endswith(".dirty").
-
-    if not p["closest-tag"]:
-        pep440 = "0+untagged.g%(short-revisionid)s%(dot-dirty)s" % p
-    else:
-        pep440 = p["closest-tag-or-zero"]
-        if p["distance"] or p["is-dirty"]:
-            pep440 += ("+%(distance)d"
-                       ".g%(short-revisionid)s"
-                       "%(dot-dirty)s") % p
-    p["pep440"] = pep440
-    full = "%(full-revisionid)s%(dot-dirty)s" % p
-    p["full"] = full
-
-    p["version"] = p["pep440"]
     return p
 

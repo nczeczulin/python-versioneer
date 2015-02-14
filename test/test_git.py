@@ -10,6 +10,7 @@ from pkg_resources import parse_version, SetuptoolsLegacyVersion
 sys.path.insert(0, "src")
 from git.from_vcs import git_parse_vcs_describe
 from git.from_keywords import git_versions_from_keywords
+from template_keys import add_template_keys
 from subprocess_helper import run_command
 
 GITS = ["git"]
@@ -28,26 +29,22 @@ class ParseGitDescribe(unittest.TestCase):
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 0+untagged.g1f.dirty
         self.assertEqual(pv("v1.0-0-g1f"),
-                         {"exact-tag": "1.0",
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "short-revisionid": "1f",
                           "distance": 0,
                           "is-dirty": False}) # 1.0
         self.assertEqual(pv("v1.0-0-g1f-dirty"),
-                         {"exact-tag": "1.0",
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+0.g1f.dirty
         self.assertEqual(pv("v1.0-1-g1f"),
-                         {"exact-tag": None,
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0+1.g1f
         self.assertEqual(pv("v1.0-1-g1f-dirty"),
-                         {"exact-tag": None,
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": True }) # 1.0+1.g1f.dirty
@@ -63,30 +60,157 @@ class ParseGitDescribe(unittest.TestCase):
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 0+untagged.g1f.dirty
         self.assertEqual(p("1.0-0-g1f"),
-                         {"exact-tag": "1.0",
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0
         self.assertEqual(p("1.0-0-g1f-dirty"),
-                         {"exact-tag": "1.0",
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 0,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+0.g1f.dirty
         self.assertEqual(p("1.0-1-g1f"),
-                         {"exact-tag": None,
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": False}) # 1.0+1.g1f
         self.assertEqual(p("1.0-1-g1f-dirty"),
-                         {"exact-tag": None,
-                          "closest-tag": "1.0",
+                         {"closest-tag": "1.0",
                           "distance": 1,
                           "short-revisionid": "1f",
                           "is-dirty": True}) # 1.0+1.g1f.dirty
 
+class TemplateKeys(unittest.TestCase):
+    def assertAdds(self, indata, expected_added):
+        outdata = add_template_keys(indata)
+        added_keys = set(outdata) - set(indata)
+        added = dict([(k, outdata[k]) for k in added_keys])
+        self.assertEqual(expected_added, added)
+
+    def test_from_vcs(self):
+        fullrevid = "shortvrpluslong"
+        shortrevid = fullrevid[:7]
+
+        self.assertEqual(add_template_keys({"unparseable": True}),
+                         {"pep440": "0+unparseable"})
+
+        # no tags, clean/dirty
+        self.assertAdds({"closest-tag": None,
+                         "is-dirty": False,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "0",
+                         "dash-dirty": "",
+                         "dot-dirty": "",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid,
+                         "version": "0+untagged.gshortvr",
+                         "pep440": "0+untagged.gshortvr",
+                         })
+        self.assertAdds({"closest-tag": None,
+                         "is-dirty": True,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "0",
+                         "dash-dirty": "-dirty",
+                         "dot-dirty": ".dirty",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid+".dirty",
+                         "version": "0+untagged.gshortvr.dirty",
+                         "pep440": "0+untagged.gshortvr.dirty",
+                         })
+
+        # sitting on 1.0, clean/dirty
+        self.assertAdds({"closest-tag": "1.0", "distance": 0,
+                         "is-dirty": False,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "1.0",
+                         "dash-distance": "",
+                         "dash-dirty": "",
+                         "dot-dirty": "",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid,
+                         "version": "1.0",
+                         "pep440": "1.0",
+                         })
+        self.assertAdds({"closest-tag": "1.0", "distance": 0,
+                         "is-dirty": True,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "1.0",
+                         "dash-distance": "",
+                         "dash-dirty": "-dirty",
+                         "dot-dirty": ".dirty",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid+".dirty",
+                         "version": "1.0+0.gshortvr.dirty",
+                         "pep440": "1.0+0.gshortvr.dirty",
+                         })
+
+        # past 1.0, clean/dirty
+        self.assertAdds({"closest-tag": "1.0", "distance": 3,
+                         "is-dirty": False,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "1.0",
+                         "dash-distance": "-3",
+                         "dash-dirty": "",
+                         "dot-dirty": "",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid,
+                         "version": "1.0+3.gshortvr",
+                         "pep440": "1.0+3.gshortvr",
+                         })
+        self.assertAdds({"closest-tag": "1.0", "distance": 3,
+                         "is-dirty": True,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "1.0",
+                         "dash-distance": "-3",
+                         "dash-dirty": "-dirty",
+                         "dot-dirty": ".dirty",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid+".dirty",
+                         "version": "1.0+3.gshortvr.dirty",
+                         "pep440": "1.0+3.gshortvr.dirty",
+                         })
+
+    def test_from_keywords(self):
+        fullrevid = "shortvrpluslong"
+        shortrevid = fullrevid[:7]
+
+        self.assertEqual(add_template_keys({"unparseable": True}),
+                         {"pep440": "0+unparseable"})
+
+        # not on a tag
+        self.assertAdds({"closest-tag": None, "distance": 0,
+                         "is-dirty": False,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "0",
+                         "dash-distance": "",
+                         "dash-dirty": "",
+                         "dot-dirty": "",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid,
+                         "version": "0+untagged.gshortvr",
+                         "pep440": "0+untagged.gshortvr",
+                         })
+
+        # yes on a tag
+        self.assertAdds({"closest-tag": "1.0", "distance": 0,
+                         "is-dirty": False,
+                         "long-revisionid": fullrevid},
+                        {"closest-tag-or-zero": "1.0",
+                         "dash-distance": "",
+                         "dash-dirty": "",
+                         "dot-dirty": "",
+                         "short-revisionid": shortrevid,
+                         "full": fullrevid,
+                         "version": "1.0",
+                         "pep440": "1.0",
+                         })
+
+    def test_from_parentdir(self):
+        self.assertEqual(add_template_keys({"version": "parentdir"}),
+                         {"version": "parentdir"})
+
+    def test_from_file(self):
+        pass
 
 class Keywords(unittest.TestCase):
     def parse(self, refnames, full, prefix=""):
@@ -95,23 +219,26 @@ class Keywords(unittest.TestCase):
 
     def test_parse(self):
         v = self.parse(" (HEAD, 2.0,master  , otherbranch ) ", " full ")
-        self.assertEqual(v, {"exact-tag": "2.0",
-                             "version": "2.0",
-                             "full": "full",
+        self.assertEqual(v, {"closest-tag": "2.0",
+                             "distance": 0,
+                             "is-dirty": False,
+                             "long-revisionid": "full",
                              })
 
     def test_prefer_short(self):
         v = self.parse(" (HEAD, 2.0rc1, 2.0, 2.0rc2) ", " full ")
-        self.assertEqual(v, {"exact-tag": "2.0",
-                             "version": "2.0",
-                             "full": "full",
+        self.assertEqual(v, {"closest-tag": "2.0",
+                             "distance": 0,
+                             "is-dirty": False,
+                             "long-revisionid": "full",
                              })
 
     def test_prefix(self):
         v = self.parse(" (HEAD, projectname-2.0) ", " full ", "projectname-")
-        self.assertEqual(v, {"exact-tag": "2.0",
-                             "version": "2.0",
-                             "full": "full",
+        self.assertEqual(v, {"closest-tag": "2.0",
+                             "distance": 0,
+                             "is-dirty": False,
+                             "long-revisionid": "full",
                              })
 
     def test_unexpanded(self):
@@ -120,16 +247,18 @@ class Keywords(unittest.TestCase):
 
     def test_no_tags(self):
         v = self.parse("(HEAD, master)", "full")
-        self.assertEqual(v, {"exact-tag": None,
-                             "version": "0+untagged",
-                             "full": "full",
+        self.assertEqual(v, {"closest-tag": None,
+                             "distance": 0,
+                             "is-dirty": False,
+                             "long-revisionid": "full",
                              })
 
     def test_no_prefix(self):
         v = self.parse("(HEAD, master, 1.23)", "full", "missingprefix-")
-        self.assertEqual(v, {"exact-tag": None,
-                             "version": "0+untagged",
-                             "full": "full",
+        self.assertEqual(v, {"closest-tag": None,
+                             "distance": 0,
+                             "is-dirty": False,
+                             "long-revisionid": "full",
                              })
 
 VERBOSE = False
@@ -358,8 +487,8 @@ class Repo(unittest.TestCase):
             # expanded keywords only tell us about tags and full revisionids,
             # not how many patches we are beyond a tag. So we can't expect
             # the short version to be like 1.0-1-gHEXID. The code falls back
-            # to short="untagged"
-            expected_TD["short"] = "0+untagged"
+            # to short="0.untagged.gHEXID"
+            expected_TD["short"] = "0+untagged.g" + expected["full"][:7]
         self.check_version(target, expected_TD, False, state, tree="TD")
 
         # TE: unpacked setup.py sdist tarball

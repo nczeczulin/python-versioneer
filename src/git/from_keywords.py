@@ -58,15 +58,11 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
             if verbose:
                 print("picking %s" % exact_tag)
             break
-    p = {"exact-tag": exact_tag,
-         "full": keywords["full"].strip()}
-    if exact_tag:
-        p["version"] = exact_tag
-    else:
-        # no suitable tags, so version is "0+untagged", but full hex is still
-        # there
-        if verbose:
-            print("no suitable tags, using unknown + full revision id")
-        p["version"] = "0+untagged"
+    p = {"closest-tag": exact_tag,
+         "distance": 0,
+         "is-dirty": False,
+         "long-revisionid": keywords["full"].strip()}
+    if verbose and not exact_tag:
+        print("no suitable tags, using 0+untagged + full revision id")
     return p
 
