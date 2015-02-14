@@ -66,6 +66,7 @@ def generate_versioneer():
         s.write(get("src/%s/from_keywords.py" % VCS,
                     unquote=True, do_strip=True))
         s.write(get("src/%s/from_vcs.py" % VCS, unquote=True, do_strip=True))
+        s.write(get("src/template_keys.py", unquote=True, do_strip=True))
         s.write(get("src/%s/long_get_versions.py" % VCS,
                     unquote=True, do_strip=True))
         s.write(u("'''\n"))
@@ -77,6 +78,7 @@ def generate_versioneer():
 
     s.write(get("src/from_parentdir.py", do_strip=True))
     s.write(get("src/from_file.py", add_ver=True, do_strip=True))
+    s.write(get("src/template_keys.py", add_ver=True, do_strip=True))
     s.write(get("src/get_versions.py", add_ver=True, do_strip=True))
     s.write(get("src/cmdclass.py", add_ver=True, do_strip=True))
 

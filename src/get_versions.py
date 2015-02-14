@@ -27,45 +27,47 @@ def get_versions(default=DEFAULT, verbose=False):
     root = get_root()
     versionfile_abs = os.path.join(root, versionfile_source)
 
-    # extract version from first of _version.py, VCS command (e.g. 'git
-    # describe'), parentdir. This is meant to work for developers using a
-    # source checkout, for users of a tarball created by 'setup.py sdist',
-    # and for users of a tarball/zipball created by 'git archive' or github's
-    # download-from-tag feature or the equivalent in other VCSes.
+    data = {}
+    data_from = ""
+
+    # extract version data from the first successful method of this list:
+    #  * _version.py
+    #  * VCS command (e.g. 'git describe')
+    #  * parentdir.
+    # This is meant to work for developers using a source checkout, for users
+    # of a tarball created by 'setup.py sdist', and for users of a
+    # tarball/zipball created by 'git archive' or github's download-from-tag
+    # feature or the equivalent in other VCSes.
 
     get_keywords_f = vcs_function(VCS, "get_keywords")
     versions_from_keywords_f = vcs_function(VCS, "versions_from_keywords")
-    if get_keywords_f and versions_from_keywords_f:
-        vcs_keywords = get_keywords_f(versionfile_abs)
-        ver = versions_from_keywords_f(vcs_keywords, tag_prefix)
-        if ver:
-            if verbose:
-                print("got version from expanded keyword %s" % ver)
-            return ver
-
-    ver = versions_from_file(versionfile_abs)
-    if ver:
-        if verbose:
-            print("got version from file %s %s" % (versionfile_abs, ver))
-        return ver
-
     versions_from_vcs_f = vcs_function(VCS, "versions_from_vcs")
-    if versions_from_vcs_f:
-        ver = versions_from_vcs_f(tag_prefix, root, verbose)
-        if ver:
-            if verbose:
-                print("got version from VCS %s" % ver)
-            return ver
 
-    ver = versions_from_parentdir(parentdir_prefix, root, verbose)
-    if ver:
-        if verbose:
-            print("got version from parentdir %s" % ver)
-        return ver
+    if not data and get_keywords_f and versions_from_keywords_f:
+        keywords = get_keywords_f(versionfile_abs)
+        data = versions_from_keywords_f(keywords, tag_prefix)
+        data_from = "expanded keywords"
+
+    if not data:
+        data = versions_from_file(versionfile_abs)
+        data_from = "file %s" % versionfile_abs
+
+    if not data and versions_from_vcs_f:
+        data = versions_from_vcs_f(tag_prefix, root, verbose)
+        data_from = "VCS"
+
+    if not data:
+        data = versions_from_parentdir(parentdir_prefix, root, verbose)
+        data_from = "parentdir"
+
+    if not data:
+        data = DEFAULT
+        data_from = "default"
 
     if verbose:
-        print("got version from default %s" % default)
-    return default
+        print("got version from %s: %s" % (data_from, data))
+
+    return add_template_keys(data)
 
 
 def get_version(verbose=False):
