@@ -6,6 +6,8 @@ SHORT_VERSION_PY = """
 # of this file.
 
 import json
+import sys
+import types
 
 version_json = '''
 %s
@@ -13,11 +15,21 @@ version_json = '''
 
 
 def get_versions(default={}, verbose=False):
-    return json.loads(version_json)
+    unicode_versions = json.loads(version_json)
+    if sys.version_info[0] >= 3:
+        return unicode_versions
+    versions = {}
+    for unicode_key, value in unicode_versions.items():
+        if isinstance(value, types.UnicodeType):
+            value = value.encode("ascii")
+        versions[unicode_key.encode("ascii")] = value
+    return versions
 """
 
 DEFAULT = {"version": "0+unknown", "full": "unknown"}
 
+import sys # --STRIP DURING BUILD
+import types # --STRIP DURING BUILD
 import json # --STRIP DURING BUILD
 import re # --STRIP DURING BUILD
 
@@ -31,7 +43,14 @@ def versions_from_file(filename):
                    contents, re.M | re.S)
     if not mo:
         return {}
-    versions = json.loads(mo.group(1))
+    unicode_versions = json.loads(mo.group(1))
+    if sys.version_info[0] >= 3:
+        return unicode_versions
+    versions = {}
+    for unicode_key, value in unicode_versions.items():
+        if isinstance(value, types.UnicodeType):
+            value = value.encode("ascii")
+        versions[unicode_key.encode("ascii")] = value
     return versions
 
 

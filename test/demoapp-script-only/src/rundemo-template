@@ -5,3 +5,7 @@
 print("__version__:%s" % versions['version'])
 print("shortversion:%s" % versions["version"])
 print("longversion:%s" % versions["full"])
+for k,v in versions.items():
+    print("%s:%s" % (k, v))
+print("version-type:%s" % type(versions["version"]))
+print("version-type-ok:%s" % (type(versions["version"]) is type("1.0")))

@@ -555,6 +555,8 @@ class Repo(unittest.TestCase):
                      pep440=True)
         self.compare(data["longversion"], expected["full"], state, tree, "RB",
                      pep440=False)
+        self.compare(data["version-type-ok"], "True", state, tree, "RB",
+                     pep440=False)
 
 
 if __name__ == '__main__':

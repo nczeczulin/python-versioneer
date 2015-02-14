@@ -4,6 +4,10 @@ import demo
 from demo import _version
 print("__version__:%s" % demo.__version__)
 print("_version:%s" % str(_version))
-v = _version.get_versions(verbose=True)
-print("shortversion:%s" % v["version"])
-print("longversion:%s" % v["full"])
+versions = _version.get_versions(verbose=True)
+for k,v in versions.items():
+    print("%s:%s" % (k, v))
+print("shortversion:%s" % versions["version"])
+print("longversion:%s" % versions["full"])
+print("version-type:%s" % type(versions["version"]))
+print("version-type-ok:%s" % (type(versions["version"]) is type("1.0")))
