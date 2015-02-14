@@ -38,20 +38,48 @@ def add_template_keys(p):
     # tagged build and then dirty it, you'll get TAG+0.gHEX.dirty . So you
     # can always test version.endswith(".dirty").
 
-    if p["closest-tag"]:
-        pep440 = p["closest-tag-or-zero"]
+    if p.get("closest-tag"):
+        pep440 = p["closest-tag"]
         if p["distance"] or p.get("is-dirty", False):
             pep440 += "+%d" % p["distance"]
             pep440 += ".g" + p["short-revisionid"]
             if p.get("is-dirty", False):
                 pep440 += ".dirty"
+        p["pep440"] = pep440
+
+        pep440pre = p["closest-tag"]
+        if p["distance"]:
+            pep440pre += ".post.dev%d" % p["distance"]
+        p["pep440pre"] = pep440pre
+
+        pep440post = p["closest-tag"]
+        if p["distance"] or p.get("is-dirty", False):
+            pep440post += ".post%d" % p["distance"]
+            if p.get("is-dirty", False):
+                pep440post += ".dev0"
+            pep440post += "+g" + p["short-revisionid"]
+        p["pep440post"] = pep440post
+
+        git_describe = p["closest-tag"]
+        if p["distance"]:
+            git_describe += "-%d-g%s" % (p["distance"],
+                                         p["short-revisionid"])
+        if p["is-dirty"]:
+            git_describe += "-dirty"
+        p["git-describe"] = git_describe
+
     else:
         pep440 = "0+untagged"
         if "short-revisionid" in p:
             pep440 += ".g" + p["short-revisionid"]
         if p.get("is-dirty", False):
             pep440 += ".dirty"
-    p["pep440"] = pep440
+        p["pep440"] = pep440
+
+        git_describe = p["short-revisionid"]
+        if p["is-dirty"]:
+            git_describe += "-dirty"
+        p["git-describe"] = git_describe
 
     if "long-revisionid" in p:
         full = p["long-revisionid"]

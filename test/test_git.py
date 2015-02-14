@@ -105,6 +105,7 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid,
                          "version": "0+untagged.gshortvr",
                          "pep440": "0+untagged.gshortvr",
+                         "git-describe": "shortvr",
                          })
         self.assertAdds({"closest-tag": None,
                          "is-dirty": True,
@@ -116,6 +117,7 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid+".dirty",
                          "version": "0+untagged.gshortvr.dirty",
                          "pep440": "0+untagged.gshortvr.dirty",
+                         "git-describe": "shortvr-dirty",
                          })
 
         # sitting on 1.0, clean/dirty
@@ -130,6 +132,9 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid,
                          "version": "1.0",
                          "pep440": "1.0",
+                         "pep440pre": "1.0",
+                         "pep440post": "1.0",
+                         "git-describe": "1.0",
                          })
         self.assertAdds({"closest-tag": "1.0", "distance": 0,
                          "is-dirty": True,
@@ -142,6 +147,9 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid+".dirty",
                          "version": "1.0+0.gshortvr.dirty",
                          "pep440": "1.0+0.gshortvr.dirty",
+                         "pep440pre": "1.0",
+                         "pep440post": "1.0.post0.dev0+gshortvr",
+                         "git-describe": "1.0-dirty",
                          })
 
         # past 1.0, clean/dirty
@@ -156,6 +164,9 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid,
                          "version": "1.0+3.gshortvr",
                          "pep440": "1.0+3.gshortvr",
+                         "pep440pre": "1.0.post.dev3",
+                         "pep440post": "1.0.post3+gshortvr",
+                         "git-describe": "1.0-3-gshortvr",
                          })
         self.assertAdds({"closest-tag": "1.0", "distance": 3,
                          "is-dirty": True,
@@ -168,6 +179,9 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid+".dirty",
                          "version": "1.0+3.gshortvr.dirty",
                          "pep440": "1.0+3.gshortvr.dirty",
+                         "pep440pre": "1.0.post.dev3",
+                         "pep440post": "1.0.post3.dev0+gshortvr",
+                         "git-describe": "1.0-3-gshortvr-dirty",
                          })
 
     def test_from_keywords(self):
@@ -189,6 +203,7 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid,
                          "version": "0+untagged.gshortvr",
                          "pep440": "0+untagged.gshortvr",
+                         "git-describe": "shortvr",
                          })
 
         # yes on a tag
@@ -203,6 +218,9 @@ class TemplateKeys(unittest.TestCase):
                          "full": fullrevid,
                          "version": "1.0",
                          "pep440": "1.0",
+                         "pep440pre": "1.0",
+                         "pep440post": "1.0",
+                         "git-describe": "1.0",
                          })
 
     def test_from_parentdir(self):
