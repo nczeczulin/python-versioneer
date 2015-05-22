@@ -3,7 +3,7 @@ from setuptools import setup
 import versioneer
 commands = versioneer.get_cmdclass().copy()
 
-setup(name="demodep-lib",
+setup(name="demolib",
       version=versioneer.get_version(),
       description="Demo",
       url="url",

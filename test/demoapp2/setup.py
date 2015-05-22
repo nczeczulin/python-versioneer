@@ -3,7 +3,7 @@ from setuptools import setup
 import versioneer
 commands = versioneer.get_cmdclass().copy()
 
-setup(name="demodep-app",
+setup(name="demoapp2",
       version=versioneer.get_version(),
       description="Demo",
       url="url",
@@ -13,6 +13,6 @@ setup(name="demodep-app",
       packages=["demo"],
       package_dir={"demo": "src/demo"},
       scripts=["bin/rundemo"],
-      install_requires=["demodep-lib"],
+      install_requires=["demolib"],
       cmdclass=commands,
       )

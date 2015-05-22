@@ -264,7 +264,7 @@ class RenderPieces(unittest.TestCase):
 
 VERBOSE = False
 
-class Repo(unittest.TestCase):
+class _Common:
     def command(self, cmd, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
         assert not kwargs, kwargs.keys()
@@ -275,12 +275,14 @@ class Repo(unittest.TestCase):
     def git(self, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
         assert not kwargs, kwargs.keys()
+        #print("git", *(args + (workdir,)))
         output = run_command(GITS, list(args), workdir, True)
         if output is None:
             self.fail("problem running git")
         return output
     def python(self, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
+        #print("python", *(args + (workdir,)))
         exe = kwargs.pop("python", sys.executable)
         assert not kwargs, kwargs.keys()
         output = run_command([exe], list(args), workdir, True)
@@ -289,6 +291,8 @@ class Repo(unittest.TestCase):
         return output
     def subpath(self, path):
         return os.path.join(self.testdir, path)
+
+class Repo(unittest.TestCase, _Common):
 
     # There are three tree states we're interested in:
     #  S1: sitting on the initial commit, no tags
@@ -624,6 +628,8 @@ class Repo(unittest.TestCase):
         elif installer == "easy_install":
             self.command(self.subpath("out/%s-ve/bin/easy_install" % tree),
                          bdist)
+            print(self.subpath("out/%s-ve" % tree))
+            os._exit(0)
         else:
             assert False, "bad installer name '%s'" % installer
         demoapp = self.subpath("out/%s-ve/bin/rundemo" % tree)
@@ -653,6 +659,43 @@ class Repo(unittest.TestCase):
         self.assertEqual(str(pv), got,
                          "%s: '%s' pep440-normalized to '%s'"
                          % (where, got, str(pv)))
+
+class Invocations(unittest.TestCase, _Common):
+    def test_all(self):
+        self.testdir = "t"
+        os.mkdir(self.testdir)
+        #self.testdir = tempfile.mkdtemp()
+        demolib_sdist, demoapp2_sdist = self.prepare()
+        # build/install demoapp2 in various ways
+
+    def prepare(self):
+        # create an sdist of demolib-1.0
+        libdir = self.subpath("build-demolib")
+        shutil.copytree("test/demolib", libdir)
+        shutil.copyfile("versioneer.py", os.path.join(libdir, "versioneer.py"))
+        self.git("init", workdir=libdir)
+        self.python("versioneer.py", "setup", workdir=libdir)
+        self.git("add", "--all", workdir=libdir)
+        self.git("commit", "-m", "commemt", workdir=libdir)
+        self.git("tag", "demolib-1.0", workdir=libdir)
+        self.python("setup.py", "sdist", "--format=gztar", workdir=libdir)
+        demolib_sdist = os.path.join(libdir, "dist/demolib-1.0.tar.gz")
+        self.assertTrue(os.path.exists(demolib_sdist))
+
+        # create a repo of demoapp2 at 2.0
+        appdir = self.subpath("build-demoapp2")
+        shutil.copytree("test/demoapp2", appdir)
+        shutil.copyfile("versioneer.py", os.path.join(appdir, "versioneer.py"))
+        self.git("init", workdir=appdir)
+        self.python("versioneer.py", "setup", workdir=appdir)
+        self.git("add", "--all", workdir=appdir)
+        self.git("commit", "-m", "commemt", workdir=appdir)
+        self.git("tag", "demoapp2-2.0", workdir=appdir)
+        self.python("setup.py", "sdist", "--format=gztar", workdir=appdir)
+        demoapp2_sdist = os.path.join(appdir, "dist/demoapp2-2.0.tar.gz")
+        self.assertTrue(os.path.exists(demoapp2_sdist))
+
+        return demolib_sdist, demoapp2_sdist
 
 if __name__ == '__main__':
     ver = run_command(GITS, ["--version"], ".", True)
