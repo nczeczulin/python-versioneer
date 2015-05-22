@@ -12,7 +12,9 @@ setup(name="demoapp2",
       zip_safe=True,
       packages=["demo"],
       package_dir={"demo": "src/demo"},
-      scripts=["bin/rundemo"],
+      entry_points={
+          'console_scripts': [ 'rundemo = demo.main:run' ],
+          },
       install_requires=["demolib"],
       cmdclass=commands,
       )
