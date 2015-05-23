@@ -717,11 +717,20 @@ class Invocations(unittest.TestCase, _Common):
         self.testdir = os.path.abspath(self.testdir)
         linkdir, demoapp2_setuptools_sdist, demoapp2_distutils_sdist = self.prepare()
         # now build/install demoapp2 in various ways
-        self.run_in_venv("distutils-install", # mode
-                         demoapp2_distutils_sdist, # unpack this
-                         "setup.py install", # run this in unpacked tree
-                         "rundemo", # run this and examine output
-                         )
+
+        v = self.run_in_venv("distutils-install", # mode
+                             demoapp2_distutils_sdist, # unpack this
+                             "setup.py install", # run this in unpacked tree
+                             "rundemo", # run this and examine output
+                             )
+        self.assertEqual(v, "2.0")
+
+        v = self.run_in_venv("setuptools-install", # mode
+                             demoapp2_setuptools_sdist, # unpack this
+                             "setup.py install", # run this in unpacked tree
+                             "rundemo", # run this and examine output
+                             )
+        self.assertEqual(v, "2.0")
 
     def run_in_venv(self, mode, unpack, build, execute):
         if not os.path.exists(self.subpath("venvs")):
@@ -739,7 +748,8 @@ class Invocations(unittest.TestCase, _Common):
         subdir = os.path.join(workdir, subdirs[0])
         self.command(python, "setup.py", "install", workdir=subdir)
         out = self.command(rundemo, workdir=venv)
-        print(out)
+        v = dict([line.split(":", 1) for line in out.splitlines()])
+        return v["version"]
 
 if __name__ == '__main__':
     ver = run_command(GITS, ["--version"], ".", True)
