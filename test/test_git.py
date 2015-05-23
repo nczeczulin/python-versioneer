@@ -10,8 +10,11 @@ from pkg_resources import parse_version, SetuptoolsLegacyVersion
 
 sys.path.insert(0, "src")
 from render import render
+from from_file import versions_from_file
 from git import from_vcs, from_keywords
 from subprocess_helper import run_command
+
+pyver = "py%d.%d" % sys.version_info[:2]
 
 GITS = ["git"]
 if sys.platform == "win32":
@@ -268,9 +271,10 @@ class _Common:
     def command(self, cmd, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
         assert not kwargs, kwargs.keys()
+        print("COMMAND:", [cmd]+list(args))
         output = run_command([cmd], list(args), workdir, True)
         if output is None:
-            self.fail("problem running command %s" % cmd)
+            self.fail("problem running command %s" % ([cmd]+list(args),))
         return output
     def git(self, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
@@ -289,8 +293,8 @@ class _Common:
         if output is None:
             self.fail("problem running python")
         return output
-    def subpath(self, path):
-        return os.path.join(self.testdir, path)
+    def subpath(self, *path):
+        return os.path.join(self.testdir, *path)
 
 class Repo(unittest.TestCase, _Common):
 
@@ -578,7 +582,6 @@ class Repo(unittest.TestCase, _Common):
         self.assertTrue(len(files)==1, files)
         short_eggfile = files[0]
         eggfile = os.path.join(self.subpath("demoapp/dist"), short_eggfile)
-        pyver = "py%d.%d" % sys.version_info[:2]
         self.assertEqual(short_eggfile, "demo-%s-%s.egg" % (expected[0], pyver))
         # installed egg
         self.check_installed(eggfile, state, "TH", expected,
@@ -661,85 +664,192 @@ class Repo(unittest.TestCase, _Common):
                          % (where, got, str(pv)))
 
 class Invocations(unittest.TestCase, _Common):
+    def setUp(self):
+        self.testdir = os.path.abspath("t")
+        if os.path.exists(self.testdir):
+            return
+        os.mkdir(self.testdir)
+        #self.testdir = tempfile.mkdtemp()
+        os.mkdir(self.subpath("cache"))
+        os.mkdir(self.subpath("cache", "distutils"))
+        os.mkdir(self.subpath("cache", "setuptools"))
 
-    def prepare(self):
-        # create an sdist of demolib-1.0
+    # "demolib" has a version of 1.0 and is built with distutils
+    # "demoapp2-distutils" is v2.0, uses distutils, and has no deps
+    # "demoapp2-setuptools" is v2.0, uses setuptools, and depends on demolib
+
+    def make_demolib_sdist(self):
+        # create an sdist of demolib-1.0 . for the *lib*, we only use the
+        # tarball, never the repo.
+        demolib_sdist = self.subpath("cache", "demolib-1.0.tar.gz")
+        if os.path.exists(demolib_sdist):
+            return demolib_sdist
         libdir = self.subpath("build-demolib")
         shutil.copytree("test/demolib", libdir)
-        shutil.copyfile("versioneer.py", os.path.join(libdir, "versioneer.py"))
+        shutil.copy("versioneer.py", libdir)
         self.git("init", workdir=libdir)
         self.python("versioneer.py", "setup", workdir=libdir)
         self.git("add", "--all", workdir=libdir)
         self.git("commit", "-m", "commemt", workdir=libdir)
         self.git("tag", "demolib-1.0", workdir=libdir)
         self.python("setup.py", "sdist", "--format=gztar", workdir=libdir)
-        demolib_sdist = os.path.join(libdir, "dist/demolib-1.0.tar.gz")
-        self.assertTrue(os.path.exists(demolib_sdist))
+        created = os.path.join(libdir, "dist", "demolib-1.0.tar.gz")
+        self.assertTrue(os.path.exists(created))
+        shutil.copyfile(created, demolib_sdist)
+        return demolib_sdist
 
-        # create a repo of demoapp2-distutils at 2.0
-        appdir = self.subpath("build-demoapp2-distutils")
-        shutil.copytree("test/demoapp2-distutils", appdir)
-        shutil.copyfile("versioneer.py", os.path.join(appdir, "versioneer.py"))
-        self.git("init", workdir=appdir)
-        self.python("versioneer.py", "setup", workdir=appdir)
-        self.git("add", "--all", workdir=appdir)
-        self.git("commit", "-m", "commemt", workdir=appdir)
-        self.git("tag", "demoapp2-2.0", workdir=appdir)
-        self.python("setup.py", "sdist", "--format=gztar", workdir=appdir)
-        demoapp2_distutils_sdist = os.path.join(appdir, "dist/demoapp2-2.0.tar.gz")
-        self.assertTrue(os.path.exists(demoapp2_distutils_sdist))
+    def make_distutils_repo(self):
+        # create a clean repo of demoapp2-distutils at 2.0
+        repodir = self.subpath("demoapp2-distutils-repo")
+        if os.path.exists(repodir):
+            shutil.rmtree(repodir)
+        shutil.copytree("test/demoapp2-distutils", repodir)
+        shutil.copy("versioneer.py", repodir)
+        self.git("init", workdir=repodir)
+        self.python("versioneer.py", "setup", workdir=repodir)
+        self.git("add", "--all", workdir=repodir)
+        self.git("commit", "-m", "commemt", workdir=repodir)
+        self.git("tag", "demoapp2-2.0", workdir=repodir)
+        return repodir
 
-        # create a repo of demoapp2-setuptools at 2.0
-        appdir = self.subpath("build-demoapp2-setuptools")
-        shutil.copytree("test/demoapp2-setuptools", appdir)
-        shutil.copyfile("versioneer.py", os.path.join(appdir, "versioneer.py"))
-        self.git("init", workdir=appdir)
-        self.python("versioneer.py", "setup", workdir=appdir)
-        self.git("add", "--all", workdir=appdir)
-        self.git("commit", "-m", "commemt", workdir=appdir)
-        self.git("tag", "demoapp2-2.0", workdir=appdir)
-        self.python("setup.py", "sdist", "--format=gztar", workdir=appdir)
-        demoapp2_setuptools_sdist = os.path.join(appdir, "dist/demoapp2-2.0.tar.gz")
-        self.assertTrue(os.path.exists(demoapp2_setuptools_sdist))
+    def make_distutils_sdist(self):
+        # create an sdist tarball of demoapp2-distutils at 2.0
+        demoapp2_distutils_sdist = self.subpath("cache", "distutils",
+                                                "demoapp2-2.0.tar.gz")
+        if os.path.exists(demoapp2_distutils_sdist):
+            return demoapp2_distutils_sdist
+        repodir = self.make_distutils_repo()
+        self.python("setup.py", "sdist", "--format=gztar", workdir=repodir)
+        created = os.path.join(repodir, "dist", "demoapp2-2.0.tar.gz")
+        self.assertTrue(os.path.exists(created))
+        shutil.copyfile(created, demoapp2_distutils_sdist)
+        return demoapp2_distutils_sdist
 
-        # create a fake pypi directory for use with --find-links
+    def make_setuptools_repo(self):
+        # create a clean repo of demoapp2-setuptools at 2.0
+        repodir = self.subpath("demoapp2-setuptools-repo")
+        if os.path.exists(repodir):
+            shutil.rmtree(repodir)
+        shutil.copytree("test/demoapp2-setuptools", repodir)
+        shutil.copy("versioneer.py", repodir)
+        self.git("init", workdir=repodir)
+        self.python("versioneer.py", "setup", workdir=repodir)
+        self.git("add", "--all", workdir=repodir)
+        self.git("commit", "-m", "commemt", workdir=repodir)
+        self.git("tag", "demoapp2-2.0", workdir=repodir)
+        return repodir
+
+    def make_setuptools_sdist(self):
+        # create an sdist tarball of demoapp2-setuptools at 2.0
+        demoapp2_setuptools_sdist = self.subpath("cache", "setuptools",
+                                                 "demoapp2-2.0.tar.gz")
+        if os.path.exists(demoapp2_setuptools_sdist):
+            return demoapp2_setuptools_sdist
+        repodir = self.make_setuptools_repo()
+        self.python("setup.py", "sdist", "--format=gztar", workdir=repodir)
+        created = os.path.join(repodir, "dist", "demoapp2-2.0.tar.gz")
+        self.assertTrue(os.path.exists(created))
+        shutil.copyfile(created, demoapp2_setuptools_sdist)
+        return demoapp2_setuptools_sdist
+
+    def make_setuptools_egg(self):
+        # create an egg of demoapp2-setuptools at 2.0
+        demoapp2_setuptools_egg = self.subpath("cache", "setuptools",
+                                               "demoapp2-2.0-%s.egg" % pyver)
+        if os.path.exists(demoapp2_setuptools_egg):
+            return demoapp2_setuptools_egg
+        repodir = self.make_setuptools_repo()
+        self.python("setup.py", "bdist_egg", workdir=repodir)
+        created = os.path.join(repodir, "dist", "demoapp2-2.0-%s.egg" % pyver)
+        self.assertTrue(os.path.exists(created))
+        shutil.copyfile(created, demoapp2_setuptools_egg)
+        return demoapp2_setuptools_egg
+
+    def make_linkdir(self):
+        # create and populate a fake pypi directory for use with --find-links
         linkdir = self.subpath("linkdir")
+        if os.path.exists(linkdir):
+            return linkdir
         os.mkdir(linkdir)
-        shutil.copyfile(demolib_sdist,
-                        os.path.join(linkdir, os.path.basename(demolib_sdist)))
+        demolib_sdist = self.make_demolib_sdist()
+        shutil.copy(demolib_sdist, linkdir)
+        return linkdir
 
-        return linkdir, demoapp2_setuptools_sdist, demoapp2_distutils_sdist
-
-    def test_all(self):
-        self.testdir = "t"
-        os.mkdir(self.testdir)
-        #self.testdir = tempfile.mkdtemp()
-        self.testdir = os.path.abspath(self.testdir)
-        linkdir, demoapp2_setuptools_sdist, demoapp2_distutils_sdist = self.prepare()
-        # now build/install demoapp2 in various ways
-
-        v = self.run_in_venv("distutils-install", # mode
-                             demoapp2_distutils_sdist, # unpack this
-                             "setup.py install", # run this in unpacked tree
-                             "rundemo", # run this and examine output
-                             )
-        self.assertEqual(v, "2.0")
-
-        v = self.run_in_venv("setuptools-install", # mode
-                             demoapp2_setuptools_sdist, # unpack this
-                             "setup.py install", # run this in unpacked tree
-                             "rundemo", # run this and examine output
-                             )
-        self.assertEqual(v, "2.0")
-
-    def run_in_venv(self, mode, unpack, build, execute):
+    def make_venv(self, mode):
         if not os.path.exists(self.subpath("venvs")):
             os.mkdir(self.subpath("venvs"))
         venv = self.subpath("venvs/%s" % mode)
         self.command("virtualenv", venv, workdir=self.subpath("venvs"))
-        python = os.path.join(venv, "bin", "python")
-        pip = os.path.join(venv, "bin", "pip")
-        rundemo = os.path.join(venv, "bin", "rundemo")
+        return venv
+
+    def run_in_venv(self, venv, workdir, command, *args):
+        bins = {"python": os.path.join(venv, "bin", "python"),
+                "pip": os.path.join(venv, "bin", "pip"),
+                "rundemo": os.path.join(venv, "bin", "rundemo")}
+        return self.command(bins[command], *args, workdir=workdir)
+
+    def check_in_venv(self, venv):
+        out = self.run_in_venv(venv, venv, "rundemo")
+        v = dict([line.split(":", 1) for line in out.splitlines()])
+        self.assertEqual(v["version"], "2.0")
+        return v
+
+    def check_in_venv_withlib(self, venv):
+        v = self.check_in_venv(venv)
+        self.assertEqual(v["demolib"], "1.0")
+
+
+    def test_distutils_repo_build(self):
+        repodir = self.make_distutils_repo()
+        self.python("setup.py", "build", workdir=repodir)
+        # test that the built _version.py is correct. Ideally we'd actually
+        # run PYTHONPATH=.../build/lib build/scripts-PYVER/rundemo and check
+        # the output, but that's more fragile than I want to deal with today
+        fn = os.path.join(repodir, "build", "lib", "demo", "_version.py")
+        data = versions_from_file(fn)
+        self.assertEqual(data["version"], "2.0")
+
+    def test_distutils_repo_install(self):
+        repodir = self.make_distutils_repo()
+        venv = self.make_venv("distutils-repo-install")
+        self.run_in_venv(venv, repodir, "python", "setup.py", "install")
+        self.check_in_venv(venv)
+
+    def test_distutils_repo_sdist(self):
+        self.make_distutils_sdist() # asserts version as a side-effect
+
+
+    def test_setuptools_repo_install(self):
+        repodir = self.make_setuptools_repo()
+        demolib = self.make_demolib_sdist()
+        venv = self.make_venv("setuptools-repo-install")
+        # "setup.py install" doesn't take --index-url or --find-links, so we
+        # pre-install the dependency
+        self.run_in_venv(venv, venv, "pip", "install", demolib)
+        self.run_in_venv(venv, repodir, "python", "setup.py", "install")
+        self.check_in_venv_withlib(venv)
+
+    def test_setuptools_repo_develop(self):
+        linkdir = self.make_linkdir()
+        repodir = self.make_setuptools_repo()
+        demolib = self.make_demolib_sdist()
+        venv = self.make_venv("setuptools-repo-develop")
+        self.run_in_venv(venv, venv, "pip", "install", demolib)
+        self.run_in_venv(venv, repodir,
+                         "python", "setup.py", "develop",
+                         "--index-url", "/dev/null",
+                         "--find-links", linkdir,
+                         )
+        self.check_in_venv_withlib(venv)
+
+    def test_setuptools_repo_egg(self):
+        self.make_setuptools_egg() # asserts version as a side-effect
+
+    def test_setuptools_repo_sdist(self):
+        self.make_setuptools_sdist() # asserts version as a side-effect
+
+
+    def OFFrun_in_venv(self, mode, unpack, build, execute):
         workdir = self.subpath("unpack-%s" % mode)
         os.mkdir(workdir)
         self.command("tar", "xf", unpack, workdir=workdir)
@@ -750,6 +860,24 @@ class Invocations(unittest.TestCase, _Common):
         out = self.command(rundemo, workdir=venv)
         v = dict([line.split(":", 1) for line in out.splitlines()])
         return v["version"]
+
+    def OFFtest_distutils_sdist_install(self):
+        demoapp2_distutils_sdist = self.make_distutils_sdist()
+        v = self.run_in_venv("distutils-install", # mode
+                             demoapp2_distutils_sdist, # unpack this
+                             "setup.py install", # run this in unpacked tree
+                             "rundemo", # run this and examine output
+                             )
+        self.assertEqual(v, "2.0")
+
+    def OFFtest_setuptools_install(self):
+        demoapp2_setuptools_sdist = self.make_setuptools_sdist()
+        v = self.run_in_venv("setuptools-install", # mode
+                             demoapp2_setuptools_sdist, # unpack this
+                             "setup.py install", # run this in unpacked tree
+                             "rundemo", # run this and examine output
+                             )
+        self.assertEqual(v, "2.0")
 
 if __name__ == '__main__':
     ver = run_command(GITS, ["--version"], ".", True)
