@@ -15,6 +15,6 @@ setup(name="demoapp2",
       entry_points={
           'console_scripts': [ 'rundemo = demo.main:run' ],
           },
-      install_requires=["demolib"],
+      install_requires=["demolib==1.0"],
       cmdclass=commands,
       )
