@@ -14,6 +14,7 @@ from from_file import versions_from_file
 from git import from_vcs, from_keywords
 from subprocess_helper import run_command
 
+pyver_major = "py%d" % sys.version_info[0]
 pyver = "py%d.%d" % sys.version_info[:2]
 
 GITS = ["git"]
@@ -747,7 +748,7 @@ class Invocations(unittest.TestCase, _Common):
 
     def make_distutils_wheel_with_pip(self):
         # create an wheel of demoapp2-distutils at 2.0
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         demoapp2_distutils_wheel = self.subpath("cache", "distutils", wheelname)
         if os.path.exists(demoapp2_distutils_wheel):
             return demoapp2_distutils_wheel
@@ -756,10 +757,6 @@ class Invocations(unittest.TestCase, _Common):
         self.run_in_venv(venv, repodir,
                          "pip", "--isolated", "wheel",
                          "--no-index",# "--find-links", linkdir,
-                         # we need --universal to get a consistent wheel
-                         # name, but the --build-option= causes a UserWarning
-                         # that's hard to squash
-                         "--build-option=--universal",
                          ".")
         created = os.path.join(repodir, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
@@ -843,7 +840,7 @@ class Invocations(unittest.TestCase, _Common):
 
     def make_setuptools_wheel_with_setup_py(self):
         # create an wheel of demoapp2-setuptools at 2.0
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         demoapp2_setuptools_wheel = self.subpath("cache", "setuptools",
                                                  wheelname)
         if os.path.exists(demoapp2_setuptools_wheel):
@@ -851,7 +848,7 @@ class Invocations(unittest.TestCase, _Common):
             # both, so don't actually cache the results
             os.unlink(demoapp2_setuptools_wheel)
         repodir = self.make_setuptools_repo()
-        self.python("setup.py", "bdist_wheel", "--universal", workdir=repodir)
+        self.python("setup.py", "bdist_wheel", workdir=repodir)
         created = os.path.join(repodir, "dist", wheelname)
         self.assertTrue(os.path.exists(created))
         shutil.copyfile(created, demoapp2_setuptools_wheel)
@@ -859,7 +856,7 @@ class Invocations(unittest.TestCase, _Common):
 
     def make_setuptools_wheel_with_pip(self):
         # create an wheel of demoapp2-setuptools at 2.0
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         demoapp2_setuptools_wheel = self.subpath("cache", "setuptools",
                                                  wheelname)
         if os.path.exists(demoapp2_setuptools_wheel):
@@ -872,10 +869,6 @@ class Invocations(unittest.TestCase, _Common):
         self.run_in_venv(venv, repodir,
                          "pip", "--isolated", "wheel",
                          "--no-index", "--find-links", linkdir,
-                         # we need --universal to get a consistent wheel
-                         # name, but the --build-option= causes a UserWarning
-                         # that's hard to squash
-                         "--build-option=--universal",
                          ".")
         created = os.path.join(repodir, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
@@ -1031,15 +1024,11 @@ class Invocations(unittest.TestCase, _Common):
 
     def test_distutils_unpacked_pip_wheel(self):
         unpacked = self.make_distutils_unpacked()
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         venv = self.make_venv("distutils-unpacked-pip-wheel")
         self.run_in_venv(venv, unpacked,
                          "pip", "--isolated", "wheel",
                          "--no-index",# "--find-links", linkdir,
-                         # we need --universal to get a consistent wheel
-                         # name, but the --build-option= causes a UserWarning
-                         # that's hard to squash
-                         "--build-option=--universal",
                          ".")
         created = os.path.join(unpacked, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
@@ -1057,24 +1046,19 @@ class Invocations(unittest.TestCase, _Common):
 
     def test_setuptools_unpacked_wheel(self):
         unpacked = self.make_setuptools_unpacked()
-        self.python("setup.py", "bdist_wheel", "--universal",
-                    workdir=unpacked)
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        self.python("setup.py", "bdist_wheel", workdir=unpacked)
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         wheel = os.path.join(unpacked, "dist", wheelname)
         self.assertTrue(os.path.exists(wheel))
 
     def test_setuptools_unpacked_pip_wheel(self):
         unpacked = self.make_setuptools_unpacked()
         linkdir = self.make_linkdir()
-        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        wheelname = "demoapp2-2.0-%s-none-any.whl" % pyver_major
         venv = self.make_venv("setuptools-unpacked-pip-wheel")
         self.run_in_venv(venv, unpacked,
                          "pip", "--isolated", "wheel",
                          "--no-index", "--find-links", linkdir,
-                         # we need --universal to get a consistent wheel
-                         # name, but the --build-option= causes a UserWarning
-                         # that's hard to squash
-                         "--build-option=--universal",
                          ".")
         created = os.path.join(unpacked, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
