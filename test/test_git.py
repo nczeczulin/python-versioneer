@@ -271,7 +271,7 @@ class _Common:
     def command(self, cmd, *args, **kwargs):
         workdir = kwargs.pop("workdir", self.subpath("demoapp"))
         assert not kwargs, kwargs.keys()
-        print("COMMAND:", [cmd]+list(args))
+        #print("COMMAND:", [cmd]+list(args))
         output = run_command([cmd], list(args), workdir, True)
         if output is None:
             self.fail("problem running command %s" % ([cmd]+list(args),))
@@ -748,8 +748,7 @@ class Invocations(unittest.TestCase, _Common):
     def make_distutils_wheel_with_pip(self):
         # create an wheel of demoapp2-distutils at 2.0
         wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
-        demoapp2_distutils_wheel = self.subpath("cache", "distutils",
-                                                 wheelname)
+        demoapp2_distutils_wheel = self.subpath("cache", "distutils", wheelname)
         if os.path.exists(demoapp2_distutils_wheel):
             return demoapp2_distutils_wheel
         repodir = self.make_distutils_repo()
@@ -783,6 +782,8 @@ class Invocations(unittest.TestCase, _Common):
     def make_distutils_unpacked(self):
         sdist = self.make_distutils_sdist()
         unpack_into = self.subpath("demoapp2-distutils-unpacked")
+        if os.path.exists(unpack_into):
+            shutil.rmtree(unpack_into)
         os.mkdir(unpack_into)
         self.command("tar", "xf", sdist, workdir=unpack_into)
         unpacked = os.path.join(unpack_into, "demoapp2-2.0")
@@ -819,6 +820,8 @@ class Invocations(unittest.TestCase, _Common):
     def make_setuptools_unpacked(self):
         sdist = self.make_setuptools_sdist()
         unpack_into = self.subpath("demoapp2-setuptools-unpacked")
+        if os.path.exists(unpack_into):
+            shutil.rmtree(unpack_into)
         os.mkdir(unpack_into)
         self.command("tar", "xf", sdist, workdir=unpack_into)
         unpacked = os.path.join(unpack_into, "demoapp2-2.0")
@@ -842,9 +845,11 @@ class Invocations(unittest.TestCase, _Common):
         # create an wheel of demoapp2-setuptools at 2.0
         wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
         demoapp2_setuptools_wheel = self.subpath("cache", "setuptools",
-                                                 wheelname)  #XXX
+                                                 wheelname)
         if os.path.exists(demoapp2_setuptools_wheel):
-            return demoapp2_setuptools_wheel
+            # there are two ways to make this .whl, and we need to exercise
+            # both, so don't actually cache the results
+            os.unlink(demoapp2_setuptools_wheel)
         repodir = self.make_setuptools_repo()
         self.python("setup.py", "bdist_wheel", "--universal", workdir=repodir)
         created = os.path.join(repodir, "dist", wheelname)
@@ -856,9 +861,11 @@ class Invocations(unittest.TestCase, _Common):
         # create an wheel of demoapp2-setuptools at 2.0
         wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
         demoapp2_setuptools_wheel = self.subpath("cache", "setuptools",
-                                                 wheelname) #XXX
+                                                 wheelname)
         if os.path.exists(demoapp2_setuptools_wheel):
-            return demoapp2_setuptools_wheel
+            # there are two ways to make this .whl, and we need to exercise
+            # both, so don't actually cache the results
+            os.unlink(demoapp2_setuptools_wheel)
         linkdir = self.make_linkdir()
         repodir = self.make_setuptools_repo()
         venv = self.make_venv("make-setuptools-wheel-with-pip")
@@ -926,7 +933,7 @@ class Invocations(unittest.TestCase, _Common):
         self.make_setuptools_egg() # asserts version as a side-effect
 
     def test_setuptools_repo_pip_wheel(self):
-        self.make_setuptools_wheel_with_pip()
+        wheel = self.make_setuptools_wheel_with_pip()
         # asserts version as a side-effect
 
     def test_setuptools_repo_bdist_wheel(self):
@@ -1018,7 +1025,6 @@ class Invocations(unittest.TestCase, _Common):
 
     def test_distutils_unpacked_install(self):
         unpacked = self.make_distutils_unpacked()
-        # XXX: make sure all venv names are unique
         venv = self.make_venv("distutils-unpacked-install")
         self.run_in_venv(venv, unpacked, "python", "setup.py", "install")
         self.check_in_venv(venv)
