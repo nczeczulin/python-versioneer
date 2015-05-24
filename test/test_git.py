@@ -1023,6 +1023,21 @@ class Invocations(unittest.TestCase, _Common):
         self.run_in_venv(venv, unpacked, "python", "setup.py", "install")
         self.check_in_venv(venv)
 
+    def test_distutils_unpacked_pip_wheel(self):
+        unpacked = self.make_distutils_unpacked()
+        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        venv = self.make_venv("distutils-unpacked-pip-wheel")
+        self.run_in_venv(venv, unpacked,
+                         "pip", "--isolated", "wheel",
+                         "--no-index",# "--find-links", linkdir,
+                         # we need --universal to get a consistent wheel
+                         # name, but the --build-option= causes a UserWarning
+                         # that's hard to squash
+                         "--build-option=--universal",
+                         ".")
+        created = os.path.join(unpacked, "wheelhouse", wheelname)
+        self.assertTrue(os.path.exists(created))
+
     def test_setuptools_unpacked_install(self):
         unpacked = self.make_setuptools_unpacked()
         demolib = self.make_demolib_sdist()
@@ -1041,6 +1056,22 @@ class Invocations(unittest.TestCase, _Common):
         wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
         wheel = os.path.join(unpacked, "dist", wheelname)
         self.assertTrue(os.path.exists(wheel))
+
+    def test_setuptools_unpacked_pip_wheel(self):
+        unpacked = self.make_setuptools_unpacked()
+        linkdir = self.make_linkdir()
+        wheelname = "demoapp2-2.0-py2.py3-none-any.whl"
+        venv = self.make_venv("setuptools-unpacked-pip-wheel")
+        self.run_in_venv(venv, unpacked,
+                         "pip", "--isolated", "wheel",
+                         "--no-index", "--find-links", linkdir,
+                         # we need --universal to get a consistent wheel
+                         # name, but the --build-option= causes a UserWarning
+                         # that's hard to squash
+                         "--build-option=--universal",
+                         ".")
+        created = os.path.join(unpacked, "wheelhouse", wheelname)
+        self.assertTrue(os.path.exists(created))
 
     def test_distutils_unpacked_pip_install(self):
         repodir = self.make_distutils_unpacked()
