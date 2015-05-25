@@ -664,7 +664,7 @@ class Repo(unittest.TestCase, _Common):
                          "%s: '%s' pep440-normalized to '%s'"
                          % (where, got, str(pv)))
 
-class Invocations(unittest.TestCase, _Common):
+class _Invocations(_Common):
     def setUp(self):
         self.testdir = os.path.abspath("t")
         if os.path.exists(self.testdir):
@@ -876,6 +876,7 @@ class Invocations(unittest.TestCase, _Common):
         return demoapp2_setuptools_wheel
 
 
+class DistutilsRepo(_Invocations, unittest.TestCase):
     def test_distutils_repo_build(self):
         repodir = self.make_distutils_repo()
         self.python("setup.py", "build", workdir=repodir)
@@ -899,7 +900,25 @@ class Invocations(unittest.TestCase, _Common):
     def test_distutils_repo_sdist(self):
         self.make_distutils_sdist() # asserts version as a side-effect
 
+    def test_distutils_repo_pip_install(self):
+        repodir = self.make_distutils_repo()
+        venv = self.make_venv("distutils-repo-pip-install")
+        self.run_in_venv(venv, repodir, "pip", "install", ".")
+        self.check_in_venv(venv)
 
+    def test_distutils_repo_pip_install_from_afar(self):
+        repodir = self.make_distutils_repo()
+        venv = self.make_venv("distutils-repo-pip-install-from-afar")
+        self.run_in_venv(venv, venv, "pip", "install", repodir)
+        self.check_in_venv(venv)
+
+    def test_distutils_repo_pip_install_editable(self):
+        repodir = self.make_distutils_repo()
+        venv = self.make_venv("distutils-repo-pip-install-editable")
+        self.run_in_venv(venv, repodir, "pip", "install", "--editable", ".")
+        self.check_in_venv(venv)
+
+class SetuptoolsRepo(_Invocations, unittest.TestCase):
     def test_setuptools_repo_install(self):
         repodir = self.make_setuptools_repo()
         demolib = self.make_demolib_sdist()
@@ -936,12 +955,6 @@ class Invocations(unittest.TestCase, _Common):
     def test_setuptools_repo_sdist(self):
         self.make_setuptools_sdist() # asserts version as a side-effect
 
-    def test_distutils_repo_pip_install(self):
-        repodir = self.make_distutils_repo()
-        venv = self.make_venv("distutils-repo-pip-install")
-        self.run_in_venv(venv, repodir, "pip", "install", ".")
-        self.check_in_venv(venv)
-
     def test_setuptools_repo_pip_install(self):
         linkdir = self.make_linkdir()
         repodir = self.make_setuptools_repo()
@@ -949,12 +962,6 @@ class Invocations(unittest.TestCase, _Common):
         self.run_in_venv(venv, repodir, "pip", "install", ".",
                          "--no-index", "--find-links", linkdir)
         self.check_in_venv_withlib(venv)
-
-    def test_distutils_repo_pip_install_from_afar(self):
-        repodir = self.make_distutils_repo()
-        venv = self.make_venv("distutils-repo-pip-install-from-afar")
-        self.run_in_venv(venv, venv, "pip", "install", repodir)
-        self.check_in_venv(venv)
 
     def test_setuptools_repo_pip_install_from_afar(self):
         linkdir = self.make_linkdir()
@@ -964,12 +971,6 @@ class Invocations(unittest.TestCase, _Common):
                          "--no-index", "--find-links", linkdir)
         self.check_in_venv_withlib(venv)
 
-    def test_distutils_repo_pip_install_editable(self):
-        repodir = self.make_distutils_repo()
-        venv = self.make_venv("distutils-repo-pip-install-editable")
-        self.run_in_venv(venv, repodir, "pip", "install", "--editable", ".")
-        self.check_in_venv(venv)
-
     def test_setuptools_repo_pip_install_editable(self):
         linkdir = self.make_linkdir()
         repodir = self.make_setuptools_repo()
@@ -978,6 +979,7 @@ class Invocations(unittest.TestCase, _Common):
                          "--no-index", "--find-links", linkdir)
         self.check_in_venv_withlib(venv)
 
+class DistutilsSdist(_Invocations, unittest.TestCase):
     def test_distutils_sdist_pip_install(self):
         sdist = self.make_distutils_sdist()
         venv = self.make_venv("distutils-sdist-pip-install")
@@ -986,6 +988,7 @@ class Invocations(unittest.TestCase, _Common):
                          sdist)
         self.check_in_venv(venv)
 
+class SetuptoolsSdist(_Invocations, unittest.TestCase):
     def test_setuptools_sdist_pip_install(self):
         linkdir = self.make_linkdir()
         sdist = self.make_setuptools_sdist()
@@ -996,6 +999,7 @@ class Invocations(unittest.TestCase, _Common):
                          sdist)
         self.check_in_venv_withlib(venv)
 
+class SetuptoolsWheel(_Invocations, unittest.TestCase):
     def test_setuptools_wheel_pip_install(self):
         linkdir = self.make_linkdir()
         wheel = self.make_setuptools_wheel_with_setup_py()
@@ -1006,6 +1010,7 @@ class Invocations(unittest.TestCase, _Common):
                          wheel)
         self.check_in_venv_withlib(venv)
 
+class DistutilsUnpacked(_Invocations, unittest.TestCase):
     def test_distutils_unpacked_build(self):
         unpacked = self.make_distutils_unpacked()
         self.python("setup.py", "build", workdir=unpacked)
@@ -1033,6 +1038,19 @@ class Invocations(unittest.TestCase, _Common):
         created = os.path.join(unpacked, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
 
+    def test_distutils_unpacked_pip_install(self):
+        repodir = self.make_distutils_unpacked()
+        venv = self.make_venv("distutils-unpacked-pip-install")
+        self.run_in_venv(venv, repodir, "pip", "install", ".")
+        self.check_in_venv(venv)
+
+    def test_distutils_unpacked_pip_install_from_afar(self):
+        repodir = self.make_distutils_unpacked()
+        venv = self.make_venv("distutils-unpacked-pip-install-from-afar")
+        self.run_in_venv(venv, venv, "pip", "install", repodir)
+        self.check_in_venv(venv)
+
+class SetuptoolsUnpacked(_Invocations, unittest.TestCase):
     def test_setuptools_unpacked_install(self):
         unpacked = self.make_setuptools_unpacked()
         demolib = self.make_demolib_sdist()
@@ -1063,12 +1081,6 @@ class Invocations(unittest.TestCase, _Common):
         created = os.path.join(unpacked, "wheelhouse", wheelname)
         self.assertTrue(os.path.exists(created))
 
-    def test_distutils_unpacked_pip_install(self):
-        repodir = self.make_distutils_unpacked()
-        venv = self.make_venv("distutils-unpacked-pip-install")
-        self.run_in_venv(venv, repodir, "pip", "install", ".")
-        self.check_in_venv(venv)
-
     def test_setuptools_unpacked_pip_install(self):
         linkdir = self.make_linkdir()
         repodir = self.make_setuptools_unpacked()
@@ -1076,12 +1088,6 @@ class Invocations(unittest.TestCase, _Common):
         self.run_in_venv(venv, repodir, "pip", "install", ".",
                          "--no-index", "--find-links", linkdir)
         self.check_in_venv_withlib(venv)
-
-    def test_distutils_unpacked_pip_install_from_afar(self):
-        repodir = self.make_distutils_unpacked()
-        venv = self.make_venv("distutils-unpacked-pip-install-from-afar")
-        self.run_in_venv(venv, venv, "pip", "install", repodir)
-        self.check_in_venv(venv)
 
     def test_setuptools_unpacked_pip_install_from_afar(self):
         linkdir = self.make_linkdir()
