@@ -632,8 +632,8 @@ class Repo(unittest.TestCase, _Common):
         elif installer == "easy_install":
             self.command(self.subpath("out/%s-ve/bin/easy_install" % tree),
                          bdist)
-            print(self.subpath("out/%s-ve" % tree))
-            os._exit(0)
+            #print(self.subpath("out/%s-ve" % tree))
+            #os._exit(0)
         else:
             assert False, "bad installer name '%s'" % installer
         demoapp = self.subpath("out/%s-ve/bin/rundemo" % tree)
