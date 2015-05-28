@@ -27,7 +27,17 @@ class _Invocations(common.Common):
         if not os.path.exists(self.subpath("venvs")):
             os.mkdir(self.subpath("venvs"))
         venv = self.subpath("venvs/%s" % mode)
-        self.command("virtualenv", venv, workdir=self.subpath("venvs"))
+        # on my computers, "/usr/local/bin/virtualenv" has a shbang that runs
+        # with python2.7, and you have to manually run it with python3.4 if
+        # you want that. Do that.
+        virtualenv = None
+        for p in os.environ["PATH"].split(os.pathsep):
+            maybe = os.path.join(p, "virtualenv")
+            if os.path.exists(maybe):
+                virtualenv = maybe
+                break
+        assert virtualenv is not None, os.environ["PATH"]
+        self.python(virtualenv, venv, workdir=self.subpath("venvs"))
         return venv
 
     def run_in_venv(self, venv, workdir, command, *args):
